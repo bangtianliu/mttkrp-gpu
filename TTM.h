@@ -35,5 +35,4 @@ int preprocess(stensor htensor, int **flag, semitensor &result);
 
 void TTM(stensor htensor, int nfibs, ttype *B, int nCols, semitensor &result);
 
-
 #endif

@@ -1,5 +1,6 @@
 #ifndef _TEST_H
 #define _TEST_H
+
 #include "TTM.h"
 
 /**
@@ -24,6 +25,7 @@ void test1(stensor data)
 	}
 }
 
+
 void test_TTM(semitensor tensor)
 {
 	int nfibs=tensor.nfibs;
@@ -38,6 +40,24 @@ void test_TTM(semitensor tensor)
 			printf("%f\t",tensor.val[i*tensor.R+j]);
 		}
 		printf("\n");
+	
+    }
+}
+template <typename T>
+void verify(semitensor tensor, T *d_result)
+{
+	int nfibs=tensor.nfibs;
+	int ncols=tensor.R;
+	for(int i=0;i<nfibs;i++)
+	{
+		int index_i=tensor.i[i];
+		int index_j=tensor.j[i];
+		for(int j=0;j<ncols;j++)
+        {
+        	if(tensor.val[i*tensor.R+j]!=d_result[j*nfibs+i]){
+        		printf("Different at %d %d CPU=%f GPU=%f\n",index_i,index_j,tensor.val[i*tensor.R+j],d_result[j*nfibs+i]);
+        	}
+        }
 	}
 }
 #endif

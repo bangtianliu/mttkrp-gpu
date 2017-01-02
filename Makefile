@@ -5,7 +5,6 @@ EXE = main
 
 SOURCES = $(SOURCEDIR)/TTM.cpp \
 	      $(SOURCEDIR)/convert.cpp \
-	      $(SOURCEDIR)/flag.cpp  \
 	      $(SOURCEDIR)/readtensor.cpp \
 	      $(SOURCEDIR)/tensor.cpp
 
@@ -13,14 +12,18 @@ CU_SOURCES = $(SOURCEDIR)/gpuTTM.cu
 
 IDIR = -I/usr/local/cuda/samples/common/inc
 
+LDIR = -L/usr/local/cuda/lib64
+
 H_FILES = $(wildcard *.h)
 OBJS = $(SOURCES:.cpp=.o)
 
 CU_OBJS=$(CU_SOURCES:.cu=.o)
 
-CFLAGS = -O3
+CFLAGS = -O3 -std=c++11
 
-SMS ?= 20 30 35 37 50 52 60
+LFLAGS = -lm -lstdc++
+SMS ?= 30 35 37 50 52 60
+#SMS ?= 20 30 35 37 50 52 60
 
 ifeq ($(SMS),)
 $(info >>> WARNING - no SM architectures have been specified - waiving sample <<<)
@@ -38,14 +41,14 @@ GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
 endif
 endif
 
-NVCCFLGAS = -O3
+NVCCFLGAS = -O3 -std=c++11
 
 $(EXE) : $(OBJS) $(CU_OBJS)
-	$(CC) $(CFLAGS) $(NVCCFLGAS) $(GENCODE_FLAGS) -o $@ $?
+	$(CC) $(CFLAGS) $(LFLAGS) $(GENCODE_FLAGS) -o $@ $?
 $(SOURCEDIR)/%.o: $(SOURCEDIR)/%.cpp $(H_FILES)
-	$(CC) $(CFLAGS) $(IDIR) -c -o $@ $<
+	$(CC) $(CFLAGS) $(LFLAGS) $(IDIR) -c -o $@ $<
 $(SOURCEDIR)/%.o: $(SOURCEDIR)/%.cu $(H_FILES)
-	$(CC) $(NVCCFLGAS) $(GENCODE_FLAGS) $(IDIR) -c -o $@ $<
+	$(CC) $(NVCCFLGAS) $(LFLAGS) $(GENCODE_FLAGS) $(IDIR) -c -o $@ $<
 
 clean:
 	rm -f *.o main	

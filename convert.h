@@ -22,10 +22,14 @@ public:
 
 #ifdef DOUBLE
 typedef soa_tensor<double> stensor;
+typedef double mtype;
 // typedef soa_tensor<double> *tensor;
 #else
 typedef soa_tensor<float> stensor;
+typedef float mtype;
 #endif
+
+typedef unsigned int type_thread;
 
 void convert(tensor data, stensor &CPU_tensor, int nnz);
 #endif

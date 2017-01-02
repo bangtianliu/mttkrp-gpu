@@ -1,19 +1,20 @@
 #include <iostream>
 
 #include <algorithm>
-
+#include <stdio.h>
 #include "readtensor.h"
 #include "convert.h"
 #include "matrix.h"
 #include "test.h"
 #include "TTM.h"
+#include "gpuTTM.h"
 
 using std::cout;
 using std::cerr;
 using std::endl;
 
 using std::string;
-using std::vector;
+// using std::vector;
 
 using std::sort;
 
@@ -91,7 +92,12 @@ int main(int argc, char **argv)
   	}
   	TTM(H_Tensor,nfibs,TTM_matrix,R,rtensor);
   	test_TTM(rtensor);
+  	unsigned int type=0;
 
+
+  	ttype *d_result=callTTM(H_Tensor, TTM_matrix, dim_k+1,R,rtensor, type);
+
+  	verify(rtensor,d_result);
     tensor_free(data);
     freeMatrix(&TTM_matrix);
     freeMatrix(&B);

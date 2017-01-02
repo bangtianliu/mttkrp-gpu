@@ -1,16 +1,17 @@
 #include "flag.h"
 
 
-template<typename T>
-flag<T>::flag(semiTensor<T> tensor)
+template<typename T, typename type_thread>
+flag<T,type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE)
 {
 	int threadLen=sizeof(T)*8;
 	int nnz=tensor.nnz;
 
 	int flagLen=(nnz-1)/threadLen+1;
 
-	flagLen = 32-flagLen%32+flagLen
-	int BLOCK_SIZE=tensor.BLOCK_SIZE;
+	flagLen = 32-flagLen%32+flagLen;
+
+	// int BLOCK_SIZE=tensor.BLOCK_SIZE;
 
 	int Gridsize=(flagLen-1)/BLOCK_SIZE+1;
 
@@ -85,11 +86,11 @@ flag<T>::flag(semiTensor<T> tensor)
 		int sum=0;
 		for(int j=0;j<threadLen&&(i*threadLen+j)<nnz;j++)
 		{
-			if(flag[(i-1)*threadLen+j]==1){
+			if(cflag[(i-1)*threadLen+j]==1){
 				++sum;
 			}
 		}
-		first[i]=sum-1;
+		first[i]=sum-1; // may be a bug 
 	}
 
 
@@ -99,7 +100,7 @@ flag<T>::flag(semiTensor<T> tensor)
 		for(int j=0;j<BLOCK_SIZE;j++)
 		{
 			if(val[j]==1){
-				blockflag[i]=1;
+				block_flag[i]=1;
 				break;
 			}
 		}
@@ -109,7 +110,7 @@ flag<T>::flag(semiTensor<T> tensor)
 	T *val=startflag+baseindex;
 	for(int j=0;j<BLOCK_SIZE&&baseindex+j<flagLen;j++){
 			if(val[j]==1){
-				blockflag[Gridsize-1]=1;
+				block_flag[Gridsize-1]=1;
 				break;
 			}
 	}
