@@ -52,11 +52,16 @@ int main(int argc, char **argv)
 	int dim_k=0;
 
     int R=16;
-
+    int BLOCK_SIZE=1024;
     char *in_file=argv[1];
     if(argc>2 and atoi(argv[2])){
     	R=atoi(argv[2]);
     }
+    if(argc>3 and atoi(argv[3]))
+    {
+    	BLOCK_SIZE=atoi(argv[3]);
+    }
+
 
     int nnz=precess(dim_i,dim_j,dim_k,argv[1]);
     printf("I=%d J=%d k=%d\n", dim_i, dim_j, dim_k);  // TTM multiply on third dimension, MTTKRP multiply on second and third dimension 
@@ -90,12 +95,13 @@ int main(int argc, char **argv)
   	for(int i=0;i<nnz;i++){
   		printf("flag: %d\n", flag[i]);
   	}
+  	printf("nfibs=%d\n", nfibs);
   	TTM(H_Tensor,nfibs,TTM_matrix,R,rtensor);
   	test_TTM(rtensor);
-  	unsigned int type=0;
+  	unsigned char type=0;
 
 
-  	ttype *d_result=callTTM(H_Tensor, TTM_matrix, dim_k+1,R,rtensor, type);
+  	ttype *d_result=callTTM(H_Tensor, TTM_matrix, dim_k+1,R,rtensor, type, BLOCK_SIZE);
 
   	verify(rtensor,d_result);
     tensor_free(data);

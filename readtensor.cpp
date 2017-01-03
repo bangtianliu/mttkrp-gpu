@@ -58,7 +58,6 @@ int readtensor(tensor data, char *file)
 	while(getline(in_stream, line)){
 		// cout<<"in readtensor"<<endl;
 		istringstream liness(line);
-		
 		liness >> data[index].coord[0] >> data[index].coord[1] >> data[index].coord[2] >> data[index].val;
 		// cout<<"in readtensor2"<<endl;
 		index++;

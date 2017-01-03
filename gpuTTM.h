@@ -81,8 +81,8 @@ tensor_gpu<T>:: tensor_gpu(stensor H_tensor, int thread_len)
 	
 	// cudaMemcpy(d_i,H_tensor.i,sizeof(int)*d_nnz,cudaMemcpyHostToDevice);
 	// cudaMemcpy(d_j,H_tensor.j,sizeof(int)*d_nnz,cudaMemcpyHostToDevice);
-	cudaMemcpy(d_k,H_tensor.k,sizeof(int)*H_tensor.nnz,cudaMemcpyHostToDevice);
-	cudaMemcpy(d_val,H_tensor.val,sizeof(T)*H_tensor.nnz,cudaMemcpyHostToDevice);	
+	cudaMemcpy(d_k,H_tensor.k,sizeof(int)*d_nnz,cudaMemcpyHostToDevice);
+	cudaMemcpy(d_val,H_tensor.val,sizeof(T)*d_nnz,cudaMemcpyHostToDevice);	
 }
 
 template <typename T>
@@ -99,7 +99,7 @@ tensor_gpu<T>::~tensor_gpu()
 	// cudaFree(d_j);
 	// cudaFree(d_k);
 	// cudaFree(d_val);
-	printf("#####Begin Free tensor_gpu#######\n");
+	// printf("#####Begin Free tensor_gpu#######\n");
 }
 
 template <typename T, typename type_thread>
@@ -114,6 +114,7 @@ semitensor_gpu<T,type_thread>::semitensor_gpu(semiTensor<T> H_tensor,
 	this->BLOCK_SIZE=BLOCK_SIZE;
     
     // int nnz=H_tensor.nnz;
+    printf("####CPU nnz=%d##### %d\n", H_tensor.nnz,sizeof(type_thread));
     int bit_len=sizeof(type_thread)*8;
     d_nnz=((H_tensor.nnz-1)/bit_len+1);
 
@@ -181,7 +182,7 @@ semitensor_gpu<T,type_thread>::~semitensor_gpu()
 	// cudaFree(d_blockflag);
 	// cudaFree(d_startflag_backup);
 
-	printf("#####Begin Free semitensor_gpu#######\n");
+	// printf("#####Begin Free semitensor_gpu#######\n");
 	// free(h_result);
 }
 
@@ -189,6 +190,7 @@ template <typename T>
 void transpose_tensor(soa_tensor<T> &H_tensor, int threadLen)
 {
 	int nnz=H_tensor.nnz;
+	// printf("%d nnz=%d\n",__LINE__,nnz);
 	int flagLen=(nnz-1)/threadLen+1;
 
 	// int *H_i=(int *)malloc(sizeof(int)*flagLen*threadLen);
@@ -210,6 +212,7 @@ void transpose_tensor(soa_tensor<T> &H_tensor, int threadLen)
 		// H_i[index]=H_tensor.i[i];
 		// H_j[index]=H_tensor.j[i];
 		H_k[index]=H_tensor.k[i];
+		// printf("%s %d index=%d\n",__FUNCTION__, __LINE__, H_k[index]);
 		H_val[index]=H_tensor.val[i];
 	}
 
@@ -251,6 +254,6 @@ void transpose_matrix(T *&val, int nRows, int nCols)
 // T *callTTM(soa_tensor<T> ltensor, T *matrix, int nRows, int nCols, semiTensor<T> rtensor, type_thread threadtype);
 
 // template <typename T=float, typename type_thread=unsigned int>
-mtype *callTTM(stensor ltensor, mtype *matrix, int nRows, int nCols, semitensor rtensor, type_thread threadtype);
+mtype *callTTM(stensor ltensor, mtype *matrix, int nRows, int nCols, semitensor rtensor, type_thread threadtype, int blocksize);
 
 #endif

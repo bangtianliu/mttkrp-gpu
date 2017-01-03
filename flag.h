@@ -37,7 +37,7 @@ flag<T,type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE)
 	int threadLen=sizeof(type_thread)*8;
 	int nnz=tensor.nnz;
 
-	printf("Test nnz: %s %d %d\n", __FILE__,__LINE__, nnz);
+	// printf("Test nnz: %s %s %d %d\n", __FILE__, __FUNCTION__, __LINE__, nnz);
 
 	int flagLen=(nnz-1)/threadLen+1;
 
@@ -68,7 +68,7 @@ flag<T,type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE)
 
 	}
 
-	printf("Flag: %d %d\n", cflag[0],flagLen);
+	// printf("Flag: %d %d\n", cflag[0],flagLen);
 	for(int i=0;i<flagLen-1;i++)
 	{
 		type_thread ibits=0;
@@ -104,29 +104,38 @@ flag<T,type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE)
 
 	}
 
-	printf("Test ibits: %s %d %x\n", __FILE__,__LINE__, ibits);
+	// printf("Test ibits: %s %d %x\n", __FILE__,__LINE__, ibits);
 	bit_flag[flagLen-1]-=ibits;
-	printf("Test bits: %s %d %x\n", __FILE__,__LINE__, bit_flag[flagLen-1]);
+	// printf("Test bits: %s %d %x\n", __FILE__,__LINE__, bit_flag[flagLen-1]);
 
 
     for(int i=0; i<flagLen; i++)
     {
-    	if(bit_flag[i]!=numeric_limits<T>::max()){
+    	if(bit_flag[i]!=numeric_limits<type_thread>::max()){
     		startflag[i]=1;
     	}
+    	// printf("####test startflag %d\n", startflag[i]);
     }
 
 	first[0]=0; // first result entry on each thread
 	for(int i=1;i<flagLen;i++)
 	{	
-		int sum=0;
-		for(int j=0;j<threadLen&&(i*threadLen+j)<nnz;j++)
+		int sum=first[i-1];
+		for(int j=0;j<threadLen-1;j++)
 		{
-			if(cflag[(i-1)*threadLen+j]==1){
-				++sum;
-			}
+			int elem=tensor.flag[(i-1)*threadLen+j];
+			int nextelem=tensor.flag[(i-1)*threadLen+j+1];
+			if(elem==0&&nextelem==1)++sum;
+			// if(tensor.flag[(i-1)*threadLen+j]==1){
+			// 	++sum;
+			// }
 		}
-		first[i]=sum-1; // may be a bug 
+		// printf("%s %d before i=%d first=%d\n", __FUNCTION__,__LINE__,i,sum);
+		int elem=tensor.flag[(i-1)*threadLen+threadLen-1];
+		int nextelem=tensor.flag[i*threadLen];
+		if(elem==0&&nextelem==1)++sum;
+		// printf("%s %d i=%d first=%d\n", __FUNCTION__,__LINE__,i,sum);
+		first[i]=sum; // may be a bug 
 	}
 
 

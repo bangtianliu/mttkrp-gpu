@@ -11,6 +11,7 @@ int preprocess(stensor htensor, int **flag, semitensor &result)
 	int nfibs=1;
 	for(int i=1;i<nnz;i++)
 	{
+		// if(i<8)printf("i=%d###Bangtian %d %d prev_i=%d prev_j=%d###\n", i,htensor.i[i],htensor.j[i],prev_i,prev_j);
 		if(htensor.i[i]!=prev_i||htensor.j[i]!=prev_j){
 			(*flag)[i]=1;
 			++nfibs;
