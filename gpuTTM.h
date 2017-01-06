@@ -114,12 +114,12 @@ semitensor_gpu<T,type_thread>::semitensor_gpu(semiTensor<T> H_tensor,
 	this->BLOCK_SIZE=BLOCK_SIZE;
     
     // int nnz=H_tensor.nnz;
-    printf("####CPU nnz=%d##### %d\n", H_tensor.nnz,sizeof(type_thread));
+    // printf("####CPU nnz=%d##### %d\n", H_tensor.nnz,sizeof(type_thread));
     int bit_len=sizeof(type_thread)*8;
     d_nnz=((H_tensor.nnz-1)/bit_len+1);
 
     printf("##TTEST %d\n", d_nnz);
-    int nBlock=((d_nnz-1)/BLOCK_SIZE+1)*d_nCols;
+    int nBlock=((d_nnz-1)/BLOCK_SIZE+1);
 
 	cudaMalloc((void **)&d_val,sizeof(T)*d_nfibs*d_nCols);
 	cudaMemset(d_val,0,sizeof(T)*d_nfibs*d_nCols);

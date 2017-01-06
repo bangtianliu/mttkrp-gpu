@@ -48,6 +48,7 @@ void verify(semitensor tensor, T *d_result)
 {
 	int nfibs=tensor.nfibs;
 	int ncols=tensor.R;
+	int index=0;
 	for(int i=0;i<nfibs;i++)
 	{
 		int index_i=tensor.i[i];
@@ -55,9 +56,12 @@ void verify(semitensor tensor, T *d_result)
 		for(int j=0;j<ncols;j++)
         {
         	if(tensor.val[i*tensor.R+j]!=d_result[j*nfibs+i]){
-        		printf("Different at %d %d CPU=%f GPU=%f\n",index_i,index_j,tensor.val[i*tensor.R+j],d_result[j*nfibs+i]);
+        		printf("Different at %d %d col=%d CPU=%f GPU=%f\n",index_i,index_j,j,tensor.val[i*tensor.R+j],d_result[j*nfibs+i]);
+        		++index;
         	}
+
         }
+        if(index>100) break;
 	}
 }
 #endif

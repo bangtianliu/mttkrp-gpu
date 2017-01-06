@@ -16,7 +16,7 @@ void randomFill(T *data, int nRows,int nCols)
 	for(int i=0;i<nRows;i++)
 		for(int j=0;j<nCols;j++)
 		{
-			data[i*nCols+j] = i*1.0;
+			data[i*nCols+j] = 1.0;
 		}
 }
 template<typename T>
@@ -24,6 +24,7 @@ void freeMatrix(T **data)
 {
 	if(*data!=NULL)
 	{
+		printf("111\n");
 		free(*data);
 		(*data)=NULL;
 	}

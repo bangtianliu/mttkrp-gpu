@@ -19,7 +19,7 @@ OBJS = $(SOURCES:.cpp=.o)
 
 CU_OBJS=$(CU_SOURCES:.cu=.o)
 
-CFLAGS = -O3 -std=c++11
+CFLAGS = -O3 -std=c++11 -DDOUBLE
 
 LFLAGS = -lm -lstdc++
 SMS ?= 30 35 37 50 52 60
@@ -41,7 +41,7 @@ GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
 endif
 endif
 
-NVCCFLGAS = -O3 -std=c++11
+NVCCFLGAS = -O3 -std=c++11 -DDOUBLE
 
 $(EXE) : $(OBJS) $(CU_OBJS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(GENCODE_FLAGS) -o $@ $?

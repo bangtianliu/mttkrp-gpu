@@ -71,8 +71,8 @@ int main(int argc, char **argv)
 
 	readtensor(data,in_file);
 
-	sorter compare(0);
-	sort(data,data+nnz,compare);
+	// sorter compare(0);
+	// sort(data,data+nnz,compare);
     // test(data, nnz);
 
     stensor H_Tensor(nnz);
@@ -87,26 +87,36 @@ int main(int argc, char **argv)
   	randomFill(B,dim_j+1,R);
   	genMatrix(&C,dim_k+1,R);
   	randomFill(C,dim_k+1,R);
-    test1(H_Tensor);
+    // test1(H_Tensor);
 
   	semitensor rtensor;
   	int *flag;
   	int nfibs=preprocess(H_Tensor,&flag,rtensor);
-  	for(int i=0;i<nnz;i++){
-  		printf("flag: %d\n", flag[i]);
-  	}
+  	// for(int i=0;i<nnz;i++){
+  	// 	printf("flag: %d\n", flag[i]);
+  	// }
   	printf("nfibs=%d\n", nfibs);
   	TTM(H_Tensor,nfibs,TTM_matrix,R,rtensor);
-  	test_TTM(rtensor);
+  	// test_TTM(rtensor);
   	unsigned char type=0;
 
 
   	ttype *d_result=callTTM(H_Tensor, TTM_matrix, dim_k+1,R,rtensor, type, BLOCK_SIZE);
-
+  	printf("%s %d\n", __FILE__, __LINE__);
   	verify(rtensor,d_result);
+  	printf("%s %d\n", __FILE__, __LINE__);
     tensor_free(data);
-    freeMatrix(&TTM_matrix);
-    freeMatrix(&B);
-    freeMatrix(&C);
+    printf("%s %d\n", __FILE__, __LINE__);
+    delete [] B;
+    delete [] C;
+    printf("%s %d\n", __FILE__, __LINE__);
+    // delete [] TTM_matrix;
+    printf("%s %d\n", __FILE__, __LINE__);
+    // free(B);
+    // free(C);
+    // free(TTM_matrix);
+    // freeMatrix(&TTM_matrix);
+    // freeMatrix(&B);
+    // freeMatrix(&C);
 }
 
