@@ -142,8 +142,11 @@ semitensor_gpu<T,type_thread>::semitensor_gpu(semiTensor<T> H_tensor,
 	memset(h_result,0,sizeof(T)*d_nfibs*d_nCols);
 
 
-	cudaMalloc((void **)&d_startflag,sizeof(unsigned short)*d_nnz);
-	cudaMemcpy(d_startflag,h_flag.startflag,sizeof(unsigned short)*d_nnz,cudaMemcpyHostToDevice);
+	cudaMalloc((void **)&d_startflag,sizeof(unsigned short)*d_nnz*d_nCols);
+	for(int i=0;i<d_nCols;i++){
+		cudaMemcpy(d_startflag+i*d_nnz,h_flag.startflag,sizeof(unsigned short)*d_nnz,cudaMemcpyHostToDevice);
+	}
+	// cudaMemcpy(d_startflag,h_flag.startflag,sizeof(unsigned short)*d_nnz,cudaMemcpyHostToDevice);
 
 	cudaMalloc((void **)&d_startflag_backup,sizeof(unsigned short)*d_nnz);
 	cudaMemcpy(d_startflag_backup,h_flag.startflag,sizeof(unsigned short)*d_nnz,cudaMemcpyHostToDevice);

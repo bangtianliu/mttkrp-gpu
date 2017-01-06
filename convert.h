@@ -29,7 +29,7 @@ typedef soa_tensor<float> stensor;
 typedef float mtype;
 #endif
 
-typedef unsigned char type_thread;
+typedef unsigned short type_thread;
 
 void convert(tensor data, stensor &CPU_tensor, int nnz);
 #endif

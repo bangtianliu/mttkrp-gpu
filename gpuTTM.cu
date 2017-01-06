@@ -105,14 +105,14 @@ __global__ void TTMgpu(const tensor_gpu<T> D_ltensor,
 
 
 template <typename T>
-__device__ T segscan_warp(T *ptr, unsigned short *hd, const int d_nnz, const unsigned int idx, const unsigned int idy)
+__device__ T segscan_warp(T *ptr, unsigned short *hd, const unsigned int d_nnz, const unsigned int idx, const unsigned int idy)
 {
 
 	const unsigned int lane=threadIdx.x & 31;
 	// if(hd[idx]) hd[idx]=lane;
 
-	int data_index=idy*d_nnz+idx; // good!
-	unsigned int flag=hd[idx];
+	unsigned int data_index=idy*d_nnz+idx; // good!
+	unsigned short flag=hd[data_index]; //fix
 	T value=ptr[data_index];
 	
 	// if(idx==0) printf("####Test flag idx=%d flag=%d value=%f\n", idx, flag,value);
@@ -133,7 +133,7 @@ __device__ T segscan_warp(T *ptr, unsigned short *hd, const int d_nnz, const uns
 			// if(idx==3)printf("FF####Test flag idx=%d %d value=%f\n", idx, otherflag,value); 
 		}
 	}
-	hd[idx]=flag;
+	hd[data_index]=flag;
 	ptr[data_index]=value;
 	// printf("####Test flag 2 idx=%d flag=%d value=%f\n", idx, flag,value);
 
@@ -170,11 +170,13 @@ __device__ T segscan_block(volatile  T *ptr,
 
 	unsigned short lane_id = threadIdx.x & 31;
 
-	unsigned int dwarp_last = idy*d_nnz+warp_last;
+	unsigned int dwarp_first = idy*d_nnz + warp_first;
+
+	unsigned int dwarp_last = idy*d_nnz + warp_last;
 
 
 
-	bool warp_is_open = (hd[warp_first]==0);
+	bool warp_is_open = (hd[dwarp_first]==0);
 
 	__syncthreads();
 	
@@ -185,8 +187,8 @@ __device__ T segscan_block(volatile  T *ptr,
     T warp_total = ptr[dwarp_last];
 
 
-    unsigned short warp_flag = hd[warp_last]!=0;// || !warp_is_open;
-    bool will_accumulate = warp_is_open && hd[idx]==0;
+    unsigned short warp_flag = hd[dwarp_last]!=0;// || !warp_is_open;
+    bool will_accumulate = warp_is_open && hd[idy*d_nnz+idx]==0;
     
     __syncthreads();
 
@@ -227,7 +229,7 @@ __device__ T segscan_block(volatile  T *ptr,
 
 	if(warpid!=0 && will_accumulate){
 		sum = sum+wptr[warpid-1]; // fix the bug
-		hd[idx]= hd[idx] | whd[warpid-1] ;
+		hd[idy*d_nnz+idx]= hd[idy*d_nnz+idx] | whd[warpid-1] ; 
 		// hd[idx]=1; // add
 	}
 	__syncthreads();
@@ -240,7 +242,7 @@ __device__ T segscan_block(volatile  T *ptr,
 }
 
 template <typename T>
-__device__ T propagate( T *last_partial,
+__device__ T propagate( T *last_partial,  //flag
 				unsigned short *startflag,
 				T preSum,
 				int idx,
@@ -250,7 +252,7 @@ __device__ T propagate( T *last_partial,
 
 	int data_index=idy*d_nnz+idx;
 	// printf("Idx=%d preSum=%f Last=%f\n",idx,preSum,last_partial[data_index] );
-	if(startflag[idx]==0)last_partial[data_index]=last_partial[data_index]+preSum;
+	if(startflag[data_index]==0)last_partial[data_index]=last_partial[data_index]+preSum; //fix
 	return last_partial[data_index];
 }
 
@@ -259,7 +261,6 @@ __global__ void segmentedscan(T *last_partial,
 							  volatile T *blockSum, 
 							  unsigned short *blockflag, 
 							  unsigned short *startflag,
-							  unsigned short *startflag_backup, 
 							  int d_nnz)
 {
 
@@ -289,7 +290,7 @@ __global__ void segmentedscan(T *last_partial,
 		// if(blockIdx.x==4)printf("TTEST startflag=%d\n", startflag[blockIdx.x*blockDim.x]);
 		if(blockIdx.x>0)
 		{
-			if(startflag[blockIdx.x*blockDim.x]==0){
+			if(startflag[idy*d_nnz+blockIdx.x*blockDim.x]==0){
 				T preSum;
 				while(blockSum[idy*gridDim.x+blockIdx.x-1]!=blockSum[idy*gridDim.x+blockIdx.x-1]) ;
 				__syncthreads();
@@ -428,7 +429,6 @@ mtype *callTTM(stensor ltensor, mtype *matrix, int nRows, int nCols, semitensor 
 														D_rtensor.d_blockSum,
 														D_rtensor.d_blockflag,
 														D_rtensor.d_startflag,
-														D_rtensor.d_startflag_backup,
 														D_rtensor.d_nnz);
 	cudaDeviceSynchronize();
 	printf("%d %s\n",__LINE__, cudaGetErrorString(cudaGetLastError()));
