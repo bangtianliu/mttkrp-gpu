@@ -29,7 +29,15 @@ __global__ void MTTKRPgpu(const tensor_gpu<T> D_ltensor,
                           const unsigned int B_nRows,
                           const unsigned int C_nRows,
                           semitensor_gpu<T, type_thread> D_rtensor,
+                          volatile T *blockSum, 
                           const unsigned int threadlen) {
+
+  __shared__ T value[1024];
+  __shared__ uint8_t sflag[1024];
+  __shared__ T wvalue[32];
+  __shared__ uint8_t wflag[32];
+
+
   unsigned int tidx = blockIdx.x * blockDim.x + threadIdx.x;
 
   unsigned int tidy = blockIdx.y;
@@ -59,8 +67,8 @@ __global__ void MTTKRPgpu(const tensor_gpu<T> D_ltensor,
 
     int d_first = D_rtensor.d_first[tidx];
     // if(threadIdx.x==124)printf("%d GPU test %f\n",__LINE__,D_matrix[tidy*nRows+index_k]);
-    unsigned short flag = ((mask & bits) == 0) ? 0 : 1;
-    unsigned short preFlag;
+    uint8_t flag = ((mask & bits) == 0) ? 0 : 1;
+    uint8_t preFlag;
     // printf("%d %d\n", tidx,d_first);
     if (flag == 0) {
       D_rtensor.d_recache[tidy * nfibs + d_first] = lastsum;
@@ -91,14 +99,95 @@ __global__ void MTTKRPgpu(const tensor_gpu<T> D_ltensor,
     index_k = D_ltensor.d_k[(threadlen - 1) * iterlen + tidx];
     val = D_ltensor.d_val[(threadlen - 1) * iterlen + tidx];
     lastsum = preFlag * lastsum + val * __ldg(&D_Bmatrix[tidy * B_nRows + index_j]) * __ldg(&D_Cmatrix[tidy * C_nRows + index_k]);
-    D_rtensor.d_last_partial[tidy * D_rtensor.d_nnz + tidx] = lastsum;
+    value[threadIdx.x]=lastsum;
+    // D_rtensor.d_last_partial[tidy * D_rtensor.d_nnz + tidx] = lastsum;
     if (flag == 0) {
       // if(tidx==116)printf("Hello!!!!!!\n");
-      D_rtensor.d_last_partial[tidy * D_rtensor.d_nnz + tidx] = 0;
+      value[threadIdx.x]=0;
+      // D_rtensor.d_last_partial[tidy * D_rtensor.d_nnz + tidx] = 0;
       D_rtensor.d_recache[tidy * nfibs + d_first] = lastsum;
     }
     // if(tidx==116) printf("idx=%d last_partial=%f\n",tidx,D_rtensor.d_last_partial[tidy*D_rtensor.d_nnz+tidx]);
     // if(tidx==116)printf("idx=%d d_first=%d recache=%f\n",tidx,d_first, D_rtensor.d_recache[d_first]);
+
+     sflag[threadIdx.x]=D_rtensor.d_startflag[tidx];
+     __syncthreads();
+
+     val=segscan_block(value, sflag, D_rtensor.d_nnz, wvalue, wflag, tidx, tidy);
+
+         if (D_rtensor.d_blockflag[blockIdx.x] == 1 || blockIdx.x == 0) {
+      if (threadIdx.x == (blockDim.x - 1)) {
+        
+        // D_rtensor.d_
+        blockSum[tidy * gridDim.x + blockIdx.x] = val;
+        // __threadfence();
+      
+      }
+    }
+
+    // if(blockIdx.x>0) {
+  if(sflag[0]==0&&blockIdx.x>0) {
+      // if (D_rtensor.dstartflag[idy * d_nnz + blockIdx.x * blockDim.x] == 0) {
+        T preSum;
+        while (blockSum[tidy * gridDim.x + blockIdx.x - 1] != blockSum[tidy * gridDim.x + blockIdx.x - 1]) ;
+        __syncthreads();
+
+
+
+        preSum = blockSum[tidy * gridDim.x + blockIdx.x - 1];
+        // printf("%d TTT %f\n", threadIdx.x,preSum);
+    if (D_rtensor.d_blockflag[blockIdx.x] == 0) {
+        
+          if (threadIdx.x == blockDim.x - 1) {
+            blockSum[tidy * gridDim.x + blockIdx.x] = preSum+val;
+
+          }
+        }
+
+        // __syncthreads(); 2
+
+    T val=propagate(value, sflag, preSum, tidx, tidy, D_rtensor.d_nnz);
+
+       
+        __syncthreads();
+ 
+      
+
+      }
+
+          if(blockIdx.x>0) {
+      if(threadIdx.x==0){
+        while(blockSum[tidy * gridDim.x + blockIdx.x - 1]!=blockSum[tidy * gridDim.x + blockIdx.x - 1]) ;
+         // __syncthreads();
+        lastsum = blockSum[tidy * gridDim.x + blockIdx.x - 1];
+
+      }
+      else{
+        lastsum = value[threadIdx.x-1];
+
+      }
+
+      // lastsum = threadIdx.x==0? blockSum[tidy * gridDim.x + blockIdx.x - 1] : value[threadIdx.x-1];
+    }
+    else lastsum = threadIdx.x==0 ? 0 : value[threadIdx.x-1];
+
+    int tfirst =D_rtensor.d_first[tidx];
+
+
+    // if(tidx==27)printf("Test val=%f, share=%f\n", lastsum,value[threadIdx.x-1]);
+    for(int i=0;i<threadlen;i++){
+      // type_thread ccflag= (mask<<i)&bits;
+      // ccflag= (ccflag==0)? 0 : 1;
+      flag = (((mask << i)&bits) == 0) ? 0 : 1;
+      // if(tidx==27)printf("FLGA=%d\n", ccflag);
+      if(flag==0){
+
+        // if(tfirst==5)printf("1 %d TEST =%f lastsum=%f\n,tfirst=%d\n", threadIdx.x, D_rtensor.d_recache[tidy*nfibs+tfirst],lastsum,tfirst);
+        D_rtensor.d_recache[tidy*nfibs+tfirst] = lastsum + D_rtensor.d_recache[tidy*nfibs+tfirst];
+        // if(tfirst==5)printf("2 %d TEST =%f lastsum=%f\n,tfirst=%d\n", threadIdx.x, D_rtensor.d_recache[tidy*nfibs+tfirst],lastsum,tfirst);
+        break;
+      }
+    }
 
   }
 
@@ -108,27 +197,27 @@ __global__ void MTTKRPgpu(const tensor_gpu<T> D_ltensor,
 
 
 template <typename T>
-__device__ T segscan_warp(T *ptr, unsigned short *hd, const unsigned int d_nnz, const unsigned int idx, const unsigned int idy) {
+__device__ T segscan_warp(T *ptr, uint8_t *hd, const unsigned int d_nnz, const unsigned int idx, const unsigned int idy) {
 
   const unsigned int lane = threadIdx.x & 31;
   // if(hd[idx]) hd[idx]=lane;
 
-  unsigned int data_index = idy * d_nnz + idx; // good!
-  unsigned short flag = hd[data_index]; //fix
-  T value = ptr[data_index];
+  // unsigned int data_index = idy * d_nnz + idx; // good!
+  uint8_t flag = hd[threadIdx.x]; //fix
+  T value = ptr[threadIdx.x];
 
   // if(idx==0) printf("####Test flag idx=%d flag=%d value=%f\n", idx, flag,value);
-  __syncthreads();
+  // __syncthreads();
   // val tmp;
   int warp_size = 32;
-  if (d_nnz < warp_size) {
-    warp_size = d_nnz;
-  }
-  __syncthreads();
+  // if (d_nnz < warp_size) {
+  //   warp_size = d_nnz;
+  // }
+  // __syncthreads();
 #pragma unroll
   for (int width = 1; width < warp_size; width *= 2) {
     __syncthreads();
-    unsigned int otherflag = __shfl_up(flag, width, 32);
+    uint8_t otherflag = __shfl_up(flag, width, 32);
     T othervalue = __shfl_up(value, width, 32);
     if (lane >= width) {
       // if(idx==3)printf("FF####Test flag idx=%d %d othervalue=%f\n", idx, otherflag,othervalue);
@@ -137,8 +226,8 @@ __device__ T segscan_warp(T *ptr, unsigned short *hd, const unsigned int d_nnz, 
       // if(idx==3)printf("FF####Test flag idx=%d %d value=%f\n", idx, otherflag,value);
     }
   }
-  hd[data_index] = flag;
-  ptr[data_index] = value;
+  hd[threadIdx.x] = flag;
+  ptr[threadIdx.x] = value;
   // printf("####Test flag 2 idx=%d flag=%d value=%f\n", idx, flag,value);
 
   // tmp.value=value;
@@ -148,16 +237,16 @@ __device__ T segscan_warp(T *ptr, unsigned short *hd, const unsigned int d_nnz, 
 
 template <typename T>
 __device__ T segscan_block(volatile  T *ptr,
-                           unsigned short *hd,
+                           uint8_t *hd,
                            const int d_nnz,
                            T *wptr,
-                           unsigned short *whd,
+                           uint8_t *whd,
                            const unsigned int idx,
                            const unsigned int idy) {
   unsigned short warplength = ((blockDim.x - 1) / 32 + 1); //d_nnz >> 5;
 
   unsigned short warpid = threadIdx.x >> 5;
-  unsigned int warp_first = (blockIdx.x * blockDim.x) + (warpid << 5); // two different kind of idx
+  unsigned int warp_first =  warpid << 5; // two different kind of idx
   unsigned int warp_last  = warp_first + 31;
 
 
@@ -168,20 +257,21 @@ __device__ T segscan_block(volatile  T *ptr,
     warplength = (d_nnz - (gridDim.x - 1) * blockDim.x - 1) / 32 + 1;
 
     if (warpid == warplength - 1) {
-      warp_last = d_nnz - 1;
+      warp_last = d_nnz-(gridDim.x - 1) * blockDim.x-(warplength-1)*32;
+      // warp_last = d_nnz - 1;
     }
   }
 
 
   unsigned short lane_id = threadIdx.x & 31;
 
-  unsigned int dwarp_first = idy * d_nnz + warp_first;
+  // unsigned int dwarp_first = idy * d_nnz + warp_first;
 
-  unsigned int dwarp_last = idy * d_nnz + warp_last;
+  // unsigned int dwarp_last = idy * d_nnz + warp_last;
 
 
 
-  bool warp_is_open = (hd[dwarp_first] == 0);
+  bool warp_is_open = (hd[warp_first] == 0);
 
   __syncthreads();
 
@@ -189,16 +279,16 @@ __device__ T segscan_block(volatile  T *ptr,
 
   // if(blockIdx.x==1024)printf("%d idx=%d threadIdx=%d val=%f warp_last=%d \n", __LINE__, idx, threadIdx.x, sum,warp_last);
 
-  T warp_total = ptr[dwarp_last];
+  T warp_total = ptr[warp_last];
 
 
-  unsigned short warp_flag = hd[dwarp_last] != 0; // || !warp_is_open;
-  bool will_accumulate = warp_is_open && hd[idy * d_nnz + idx] == 0;
+  uint8_t warp_flag = hd[warp_last] != 0; // || !warp_is_open;
+  bool will_accumulate = warp_is_open && hd[threadIdx.x] == 0;
 
   __syncthreads();
 
 
-  if (idx == warp_last) {
+  if (threadIdx.x == warp_last) {
 
     wptr[warpid] = warp_total; //share memory for scan in the block
     whd[warpid] = warp_flag;
@@ -212,11 +302,11 @@ __device__ T segscan_block(volatile  T *ptr,
     // printf("ffff lane_id=%d",lane_id);
     T value = wptr[lane_id];
     // if(lane_id==2)printf("TEST=%f\n",value);
-    unsigned short flag = whd[lane_id];
+    uint8_t flag = whd[lane_id];
 
 #pragma unroll
     for (int i = 1; i <= 32; i *= 2) {
-      unsigned short otherflag = __shfl_up(flag, i, 32);
+      uint8_t otherflag = __shfl_up(flag, i, 32);
       T othervalue = __shfl_up(value, i, 32);
       // if(blockIdx.x==0)printf("%d i=%d lane_id=%d value=%f othervalue=%f flag=%d otherflag=%d\n", __LINE__, i, lane_id, value, othervalue,flag,otherflag);
       if (lane_id >= i) {
@@ -234,12 +324,12 @@ __device__ T segscan_block(volatile  T *ptr,
 
   if (warpid != 0 && will_accumulate) {
     sum = sum + wptr[warpid - 1]; // fix the bug
-    hd[idy * d_nnz + idx] = hd[idy * d_nnz + idx] | whd[warpid - 1] ;
+    hd[threadIdx.x] = hd[threadIdx.x] | whd[warpid - 1] ;
     // hd[idx]=1; // add
   }
   __syncthreads();
 
-  ptr[idy * d_nnz + idx] = sum;
+  ptr[threadIdx.x] = sum;
 
   __syncthreads();
 
@@ -248,36 +338,42 @@ __device__ T segscan_block(volatile  T *ptr,
 
 template <typename T>
 __device__ T propagate( T *last_partial,  //flag
-                        unsigned short *startflag,
+                        uint8_t*startflag,
                         T preSum,
                         int idx,
                         int idy,
                         int d_nnz) {
 
-  int data_index = idy * d_nnz + idx;
+  // int data_index = idy * d_nnz + idx;
   // printf("Idx=%d preSum=%f Last=%f\n",idx,preSum,last_partial[data_index] );
-  if (startflag[data_index] == 0) {
-    last_partial[data_index] = last_partial[data_index] + preSum;  //fix
+  if (startflag[threadIdx.x] == 0) {
+    last_partial[threadIdx.x] = last_partial[threadIdx.x] + preSum;  //fix
   }
-  return last_partial[data_index];
+  return last_partial[threadIdx.x];
 }
 
 template <typename T>
 __global__ void segmentedscan(T *last_partial,
                               volatile T *blockSum,
-                              unsigned short *blockflag,
-                              unsigned short *startflag,
+                              uint8_t *blockflag,
+                              uint8_t *startflag,
                               int d_nnz) {
 
   __shared__ T wptr[32];
-  __shared__ unsigned short whd[32];
+  __shared__ uint8_t whd[32];
 
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   int idy = blockIdx.y;
 
   if (idx < d_nnz) {
     // if(idx==0)printf("%d TEST %d d_nnz=%d\n", __LINE__,gridDim.x,d_nnz);
-    T val = segscan_block(last_partial, startflag, d_nnz, wptr, whd, idx, idy);
+    T val = segscan_block(last_partial, 
+    						startflag, 
+    						d_nnz, 
+    						wptr, 
+    						whd, 
+    						idx, 
+    						idy);
 
     // if(blockIdx.x==1024)printf("%d idx=%d threadIdx=%d blockIdx.y=%d val=%f \n", __LINE__, idx, threadIdx.x, blockIdx.y, val);
 
@@ -437,27 +533,28 @@ mtype *callTTM(stensor ltensor, mtype *Bmatrix, mtype *Cmatrix, int B_nRows, int
                                                     B_nRows,
                                                     C_nRows,
                                                     D_rtensor,
+                                                    D_rtensor.d_blockSum,
                                                     threadlen);
 
   // cudaDeviceSynchronize();
   // printf("%d, %s\n",__LINE__, cudaGetErrorString(cudaGetLastError()));
 
 
-  segmentedscan <<< dim3(Gridsize, rank), BLOCK_SIZE>>>(D_rtensor.d_last_partial,
-                                                        D_rtensor.d_blockSum,
-                                                        D_rtensor.d_blockflag,
-                                                        D_rtensor.d_startflag,
-                                                        D_rtensor.d_nnz);
-  cudaDeviceSynchronize();
-  printf("%d %s\n", __LINE__, cudaGetErrorString(cudaGetLastError()));
+  // segmentedscan <<< dim3(Gridsize, rank), BLOCK_SIZE>>>(D_rtensor.d_last_partial,
+  //                                                       D_rtensor.d_blockSum,
+  //                                                       D_rtensor.d_blockflag,
+  //                                                       D_rtensor.d_startflag,
+  //                                                       D_rtensor.d_nnz);
+  // // cudaDeviceSynchronize();
+  // // printf("%d %s\n", __LINE__, cudaGetErrorString(cudaGetLastError()));
 
-  // printf("d_nfibs=%d\n",D_rtensor.d_nfibs );
-  mergeSum <<< dim3(Gridsize, rank), BLOCK_SIZE>>>(D_rtensor.d_last_partial,
-                                                   D_rtensor.d_recache,
-                                                   D_rtensor.d_first,
-                                                   D_rtensor.d_bflags,
-                                                   D_rtensor.d_nnz,
-                                                   D_rtensor.d_nfibs);
+  // // printf("d_nfibs=%d\n",D_rtensor.d_nfibs );
+  // mergeSum <<< dim3(Gridsize, rank), BLOCK_SIZE>>>(D_rtensor.d_last_partial,
+  //                                                  D_rtensor.d_recache,
+  //                                                  D_rtensor.d_first,
+  //                                                  D_rtensor.d_bflags,
+  //                                                  D_rtensor.d_nnz,
+  //                                                  D_rtensor.d_nfibs);
   cudaEventRecord(stop, 0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&et, start, stop);

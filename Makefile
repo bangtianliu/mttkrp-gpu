@@ -21,6 +21,7 @@ CU_OBJS=$(CU_SOURCES:.cu=.o)
 
 DOUBLEFLAGS = -DDOUBLE
 TYPEFLAGS = -DLONG
+#typeflags = -DLONG -DINT -DSHORT -DCHAR
 
 CFLAGS = -O3 -std=c++11  -Xcompiler -fopenmp $(DOUBLEFLAGS) $(TYPEFLAGS)
 
@@ -44,7 +45,7 @@ GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
 endif
 endif
 
-NVCCFLGAS = -O3 -std=c++11 $(DOUBLEFLAGS) $(TYPEFLAGS) -Xptxas -v
+NVCCFLGAS = -O3 -std=c++11 $(DOUBLEFLAGS) $(TYPEFLAGS) -Xptxas -dlcm=ca -Xptxas -v
 
 $(EXE) : $(OBJS) $(CU_OBJS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(GENCODE_FLAGS) -o $@ $?

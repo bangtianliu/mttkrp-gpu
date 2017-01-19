@@ -4,6 +4,7 @@
 #include <climits>
 #include <cstring>
 #include <limits>
+#include <stdint.h>
 using std::numeric_limits;
 
 
@@ -16,8 +17,8 @@ class flag {
   type_thread *cflag;
   type_thread *bit_flag;
   int *first;
-  unsigned short *startflag;
-  unsigned short *block_flag;
+  uint8_t *startflag;
+  uint8_t *block_flag;
 };
 
 
@@ -47,13 +48,13 @@ flag<T, type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE) {
   cflag = (type_thread *)malloc(sizeof(type_thread) * flagLen);
   bit_flag = (type_thread *)malloc(sizeof(type_thread) * flagLen);
   first = (int *)malloc(sizeof(int) * flagLen);
-  startflag = (unsigned short *)malloc(sizeof(unsigned short) * flagLen);
-  block_flag = (unsigned short *)malloc(sizeof(unsigned short) * Gridsize);
+  startflag = (uint8_t *)malloc(sizeof(uint8_t) * flagLen);
+  block_flag = (uint8_t *)malloc(sizeof(uint8_t) * Gridsize);
 
   memset(bit_flag, -1, sizeof(type_thread)*flagLen);
   memset(cflag, 0, sizeof(type_thread)*flagLen);
-  memset(startflag, 0, sizeof(unsigned short)*flagLen);
-  memset(block_flag, 0, sizeof(unsigned short)*Gridsize);
+  memset(startflag, 0, sizeof(uint8_t)*flagLen);
+  memset(block_flag, 0, sizeof(uint8_t)*Gridsize);
   for (int i = 0; i < flagLen; i++) {
     // T ibits;
     T bits = 0;
@@ -157,7 +158,7 @@ flag<T, type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE) {
 
 
   for (int i = 0; i < Gridsize - 1; i++) {
-    unsigned short *val = startflag + i * BLOCK_SIZE;
+    uint8_t *val = startflag + i * BLOCK_SIZE;
     for (int j = 0; j < BLOCK_SIZE; j++) {
       if (val[j] == 1) {
         block_flag[i] = 1;
@@ -167,7 +168,7 @@ flag<T, type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE) {
   }
 
   int baseindex = (Gridsize - 1) * BLOCK_SIZE;
-  unsigned short *val = startflag + baseindex;
+  uint8_t *val = startflag + baseindex;
   for (int j = 0; j < BLOCK_SIZE && baseindex + j < flagLen; j++) {
     if (val[j] == 1) {
       block_flag[Gridsize - 1] = 1;

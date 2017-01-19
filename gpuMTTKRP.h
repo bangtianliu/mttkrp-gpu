@@ -8,6 +8,7 @@
 
 #include <device_functions.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "flag.h"
 #include "MTTKRP.h"
 #include "convert.h"
@@ -51,9 +52,9 @@ struct semitensor_gpu {
   int BLOCK_SIZE;
 
 
-  unsigned short *d_startflag;
-  unsigned short *d_startflag_backup;
-  unsigned short *d_blockflag;
+  uint8_t *d_startflag;
+  // unsigned short *d_startflag_backup;
+  uint8_t *d_blockflag;
   semitensor_gpu(semiTensor<T> H_tensor, flag<T, type_thread> h_flag, int BLOCK_SIZE);
   void Free(int a = 0);
   ~semitensor_gpu();
@@ -140,20 +141,20 @@ semitensor_gpu<T, type_thread>::semitensor_gpu(semiTensor<T> H_tensor,
   memset(h_result, 0, sizeof(T)*d_nfibs * d_nCols);
 
 
-  cudaMalloc((void **)&d_startflag, sizeof(unsigned short)*d_nnz * d_nCols);
-  for (int i = 0; i < d_nCols; i++) {
-    cudaMemcpy(d_startflag + i * d_nnz, h_flag.startflag, sizeof(unsigned short)*d_nnz, cudaMemcpyHostToDevice);
-  }
+  cudaMalloc((void **)&d_startflag, sizeof(uint8_t)*d_nnz);
+  // for (int i = 0; i < d_nCols; i++) {
+    cudaMemcpy(d_startflag , h_flag.startflag, sizeof(uint8_t)*d_nnz, cudaMemcpyHostToDevice);
+  // }
   // cudaMemcpy(d_startflag,h_flag.startflag,sizeof(unsigned short)*d_nnz,cudaMemcpyHostToDevice);
 
-  cudaMalloc((void **)&d_startflag_backup, sizeof(unsigned short)*d_nnz);
-  cudaMemcpy(d_startflag_backup, h_flag.startflag, sizeof(unsigned short)*d_nnz, cudaMemcpyHostToDevice);
+  // cudaMalloc((void **)&d_startflag_backup, sizeof(unsigned short)*d_nnz);
+  // cudaMemcpy(d_startflag_backup, h_flag.startflag, sizeof(unsigned short)*d_nnz, cudaMemcpyHostToDevice);
 
   cudaMalloc((void **)&d_blockSum, sizeof(T)*nBlock * d_nCols);
   cudaMemset(d_blockSum, -1, sizeof(T)*nBlock * d_nCols);
 
-  cudaMalloc((void **)&d_blockflag, sizeof(unsigned short)*nBlock);
-  cudaMemcpy(d_blockflag, h_flag.block_flag, sizeof(unsigned short)*nBlock, cudaMemcpyHostToDevice);
+  cudaMalloc((void **)&d_blockflag, sizeof(uint8_t)*nBlock);
+  cudaMemcpy(d_blockflag, h_flag.block_flag, sizeof(uint8_t)*nBlock, cudaMemcpyHostToDevice);
 
 }
 
@@ -167,7 +168,7 @@ void semitensor_gpu<T, type_thread>::Free(int a) {
   cudaFree(d_startflag);
   cudaFree(d_blockSum);
   cudaFree(d_blockflag);
-  cudaFree(d_startflag_backup);
+  // cudaFree(d_startflag_backup);
 }
 template <typename T, typename type_thread>
 semitensor_gpu<T, type_thread>::~semitensor_gpu() {
