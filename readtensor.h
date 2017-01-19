@@ -3,10 +3,9 @@
 
 
 template<typename T>
-struct element
-{
-	int coord[3];
-	T val;
+struct element {
+  int coord[3];
+  T val;
 };
 
 #ifdef DOUBLE
@@ -17,7 +16,7 @@ typedef element<float> item;
 typedef element<float> *tensor;
 #endif
 
-int precess(int &dim_i,int &dim_j, int &dim_k, char *file);
+int precess(int &dim_i, int &dim_j, int &dim_k, char *file);
 
 void tensor_malloc(tensor *data, int nnz);
 void tensor_free(tensor data);

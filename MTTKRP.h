@@ -10,16 +10,15 @@ typedef float ttype;
 #endif
 
 template <typename T>
-struct semiTensor
-{
-public:
-	int *i;
-	int *j;
-	int nfibs;
-	int nnz;
-	int *flag;
-	int R;
-	T *val;
+struct semiTensor {
+ public:
+  int *i;
+  // int *j;
+  int nfibs;
+  int nnz;
+  int *flag;
+  int R;
+  T *val;
 };
 
 #ifdef DOUBLE
@@ -33,6 +32,11 @@ typedef semiTensor<float> semitensor;
 int preprocess(stensor htensor, int **flag, semitensor &result);
 
 
-void TTM(stensor htensor, int nfibs, ttype *B, int nCols, semitensor &result);
+void MTTKRP(stensor htensor,
+            int nfibs,
+            ttype *B,
+            ttype *C,
+            int nCols,
+            semitensor &result);
 
 #endif

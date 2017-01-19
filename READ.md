@@ -4,6 +4,7 @@ We try to propose a generalized GPU paralell and optimization sheme for sparse t
   ___
   1. Sparse TTM
   2. MTTKRP (TO DO)
+
     ___
 ##TODO
     Continue include other tensor operations.

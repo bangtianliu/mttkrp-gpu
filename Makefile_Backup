@@ -1,16 +1,18 @@
 SRCS = $(wildcard *.cpp)
-OBJS = $(SRCS:.c = .o)
-CC = g++ 
-INCLUDES = -I
-LIBS = -L
-CCFLAGS= -O3 -Wall -std=c++11 -fpermissive -DDOUBLE 
+       OBJS = $(SRCS: .c = .o)
+              CC = g++
+                   INCLUDES = -I
+                              LIBS = -L
+                                     CCFLAGS = -O3 - Wall - std = c++11 - fpermissive - DDOUBLE
 
-main: $(OBJS)
-	$(CC) $^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS) 
+                                                                  main:
+                                                                  $(OBJS)
+                                                                  $(CC) $ ^ -o $@ $(INCLUDES) $(LIBS) $(CCFLAGS)
 
-%.o : %.cpp
-	$(CC) -c $< $(CCFLAGS)
+                                                                  % .o :
+                                                                  % .cpp
+                                                                  $(CC) - c $ < $(CCFLAGS)
 
-clean:
-	rm *.o main
-	#.PHONY:clean
+                                                                  clean:
+                                                                  rm * .o main
+#.PHONY:clean

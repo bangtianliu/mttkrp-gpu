@@ -3,14 +3,14 @@ SOURCEDIR = ./
 
 EXE = main
 
-SOURCES = $(SOURCEDIR)/TTM.cpp \
+SOURCES = $(SOURCEDIR)/MTTKRP.cpp \
 	      $(SOURCEDIR)/convert.cpp \
 	      $(SOURCEDIR)/readtensor.cpp \
 	      $(SOURCEDIR)/tensor.cpp
 
-CU_SOURCES = $(SOURCEDIR)/gpuTTM.cu	
+CU_SOURCES = $(SOURCEDIR)/gpuMTTKRP.cu	
 
-IDIR = -I/usr/local/cuda/samples/common/inc
+IDIR = -I/usr/local/cuda/samples/common/inc -I/home/labuser/splatt-1.1.1/include
 
 LDIR = -L/usr/local/cuda/lib64
 
@@ -19,10 +19,13 @@ OBJS = $(SOURCES:.cpp=.o)
 
 CU_OBJS=$(CU_SOURCES:.cu=.o)
 
-CFLAGS = -O3 -std=c++11 -DDOUBLE
+DOUBLEFLAGS = -DDOUBLE
+TYPEFLAGS = -DLONG
 
-LFLAGS = -lm -lstdc++
-SMS ?= 30 35 37 50 52 60
+CFLAGS = -O3 -std=c++11  -Xcompiler -fopenmp $(DOUBLEFLAGS) $(TYPEFLAGS)
+
+LFLAGS = -lm -lstdc++ -lsplatt 
+SMS ?= 35 37 50 52 60
 #SMS ?= 20 30 35 37 50 52 60
 
 ifeq ($(SMS),)
@@ -41,7 +44,7 @@ GENCODE_FLAGS += -gencode arch=compute_$(HIGHEST_SM),code=compute_$(HIGHEST_SM)
 endif
 endif
 
-NVCCFLGAS = -O3 -std=c++11 -DDOUBLE
+NVCCFLGAS = -O3 -std=c++11 $(DOUBLEFLAGS) $(TYPEFLAGS) -Xptxas -v
 
 $(EXE) : $(OBJS) $(CU_OBJS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(GENCODE_FLAGS) -o $@ $?
