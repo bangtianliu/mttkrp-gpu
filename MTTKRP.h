@@ -13,7 +13,6 @@ template <typename T>
 struct semiTensor {
  public:
   int *i;
-  // int *j;
   int nfibs;
   int nnz;
   int *flag;
@@ -24,7 +23,6 @@ struct semiTensor {
 #ifdef DOUBLE
 typedef semiTensor<double> semitensor;
 
-// typedef soa_tensor<double> *tensor;
 #else
 typedef semiTensor<float> semitensor;
 #endif

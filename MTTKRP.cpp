@@ -10,7 +10,6 @@ int preprocess(stensor htensor, int **flag, semitensor &result) {
   (*flag)[0] = 1;
   int nfibs = 1;
   for (int i = 1; i < nnz; i++) {
-    // if(i<8)printf("i=%d###Bangtian %d %d prev_i=%d prev_j=%d###\n", i,htensor.i[i],htensor.j[i],prev_i,prev_j);
     if (htensor.i[i] != prev_i) {
       (*flag)[i] = 1;
       ++nfibs;
@@ -23,7 +22,6 @@ int preprocess(stensor htensor, int **flag, semitensor &result) {
   result.flag = *flag;
   result.nnz = nnz;
   result.i = (int *)malloc(sizeof(int) * nfibs);
-  // result.j=(int *)malloc(sizeof(int)*nfibs);
 
   return nfibs;
 
@@ -49,7 +47,6 @@ void MTTKRP(stensor htensor,
     if (result.flag[i] == 1) {
       ++index;
       result.i[index] = htensor.i[i];
-      // result.j[index]=htensor.j[i];
     }
 
     for (int r = 0; r < nCols; r++) {

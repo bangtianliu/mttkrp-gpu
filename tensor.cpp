@@ -90,9 +90,7 @@ int main(int argc, char **argv) {
   stensor H_Tensor(nnz);
   convert(data, H_Tensor, nnz,mode);
 
-  // ttype *TTM_matrix;
-  // genMatrix(&TTM_matrix, dim_k + 1, R);
-  // randomFill(TTM_matrix, dim_k + 1, R);
+
 
   ttype *A,*B, *C; // B,C for MTTKRP
 
@@ -111,16 +109,12 @@ int main(int argc, char **argv) {
 
  
 
-  // genMatrix(&A, dim_i + 1, R);
-  // randomFill(A, dim_i + 1, R);
+
   genMatrix(&B, nRows1, R);
   randomFill(B, nRows1, R);
   genMatrix(&C, nRows2, R);
   randomFill(C, nRows2, R);
-  // test1(H_Tensor);
-  // matrices[0]=A;
-  // matrices[1]=B;
-  // matrices[2]=C;
+
 
 
   semitensor rtensor;
@@ -141,21 +135,11 @@ int main(int argc, char **argv) {
   ttype *d_result = callTTM(H_Tensor, B, C, nRows1, nRows2, R, rtensor, type, BLOCK_SIZE);
 
 
-  printf("%s %d\n", __FILE__, __LINE__);
+ 
   verify(rtensor, d_result);
-  printf("%s %d\n", __FILE__, __LINE__);
+
   tensor_free(data);
-  printf("%s %d\n", __FILE__, __LINE__);
-  // delete [] B;
-  // delete [] C;
-  printf("%s %d\n", __FILE__, __LINE__);
-  // delete [] TTM_matrix;
-  printf("%s %d\n", __FILE__, __LINE__);
-  // free(B);
-  // free(C);
-  // free(TTM_matrix);
-  // freeMatrix(&TTM_matrix);
-  // freeMatrix(&B);
-  // freeMatrix(&C);
+
+
 }
 
