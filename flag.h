@@ -12,8 +12,7 @@ template<typename T, typename type_thread>
 class flag {
  public:
   flag(semiTensor<T> tensor, int BLOCK_SIZE);
-  // type_thread *getFlag();
-  // T *getBFlag();
+
   type_thread *cflag;
   type_thread *bit_flag;
   int *first;
@@ -22,27 +21,15 @@ class flag {
 };
 
 
-// template<typename T>
-// inline T *flag<T>::getFlag(){
-//  return this->flag;
-// }
-
-// template<typename T>
-// inline T *flag<T>::getBFlag(){
-//  return this->bit_flag;
-// }
 
 template<typename T, typename type_thread>
 flag<T, type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE) {
   int threadLen = sizeof(type_thread) * 8;
   int nnz = tensor.nnz;
 
-  // printf("Test nnz: %s %s %d %d\n", __FILE__, __FUNCTION__, __LINE__, nnz);
-
   int flagLen = (nnz - 1) / threadLen + 1;
 
-  // flagLen = 32-flagLen%32+flagLen;
-  // int BLOCK_SIZE=tensor.BLOCK_SIZE;
+
   int Gridsize = (flagLen - 1) / BLOCK_SIZE + 1;
 
   cflag = (type_thread *)malloc(sizeof(type_thread) * flagLen);
@@ -66,19 +53,18 @@ flag<T, type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE) {
 
   }
 
-  // printf("Flag: %d %d\n", cflag[0],flagLen);
+
   for (int i = 0; i < flagLen - 1; i++) {
     type_thread ibits = 0;
     for (int j = 0; j < threadLen; j++) {
       unsigned int nextelem = tensor.flag[i * threadLen + j + 1];
-      // printf("nextelem: %s %d %d\n", __FILE__,__LINE__, nextelem);
+
       if (nextelem == 1) {
         ibits += ((type_thread)1 << j);
       }
     }
     bit_flag[i] -= ibits;
 
-    // printf("Bangtian Liu:i=%d %x\n", i,bit_flag[i]);
   }
 
   type_thread ibits = 0;
@@ -87,34 +73,28 @@ flag<T, type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE) {
     unsigned int nextelem;
     if (index < nnz) {
       nextelem = tensor.flag[index];
-      // printf("nextelem: j=%d %s %d %d %d\n", j,__FILE__,__LINE__, nextelem,nnz);
+
       if (nextelem == 1) {
         ibits += ((type_thread)1 << j);
       }
     }
-    // if(index==nnz-1){
-    //  ;
-    //  // ibits+=(1<<j);
-    // }
-    // if(index>nnz-1&&j<threadLen-1){
-    //  ;
-    // }
+
     if (j == threadLen - 1) {
       ibits += ((type_thread)1 << j);
     }
 
   }
 
-  // printf("Test ibits: %s %d %x\n", __FILE__,__LINE__, ibits);
+
   bit_flag[flagLen - 1] -= ibits;
-  // printf("Test bits: %s %d %x\n", __FILE__,__LINE__, bit_flag[flagLen-1]);
+  
 
 
   for (int i = 0; i < flagLen; i++) {
     if (bit_flag[i] != numeric_limits<type_thread>::max()) {
       startflag[i] = 1;
     }
-    // printf("####test startflag %d\n", startflag[i]);
+
   }
 
   first[0] = -1;
@@ -135,26 +115,6 @@ flag<T, type_thread>::flag(semiTensor<T> tensor, int BLOCK_SIZE) {
   if (tensor.flag[(flagLen - 1)*threadLen] == 1) {
     ++first[flagLen - 1];
   }
-  // first[0]=0; // first result entry on each thread
-  // for(int i=1;i<flagLen;i++)
-  // {
-  //  int sum=first[i-1];
-  //  for(int j=0;j<threadLen-1;j++)
-  //  {
-  //    int elem=tensor.flag[(i-1)*threadLen+j];
-  //    int nextelem=tensor.flag[(i-1)*threadLen+j+1];
-  //    if(elem==0&&nextelem==1)++sum;
-  //    // if(tensor.flag[(i-1)*threadLen+j]==1){
-  //    //  ++sum;
-  //    // }
-  //  }
-  //  // printf("%s %d before i=%d first=%d\n", __FUNCTION__,__LINE__,i,sum);
-  //  int elem=tensor.flag[(i-1)*threadLen+threadLen-1];
-  //  int nextelem=tensor.flag[i*threadLen];
-  //  if(elem==0&&nextelem==1)++sum;
-  //     printf("%s %d i=%d first=%d\n", __FUNCTION__,__LINE__,i,sum);
-  //  first[i]=sum; // may be a bug
-  // }
 
 
   for (int i = 0; i < Gridsize - 1; i++) {

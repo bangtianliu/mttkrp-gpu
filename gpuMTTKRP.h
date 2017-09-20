@@ -13,17 +13,10 @@
 #include "MTTKRP.h"
 #include "convert.h"
 
-// template <typename T>
-// struct val
-// {
-//  T value;
-//  unsigned short flag;
-// };
 
 template <typename T>
 struct tensor_gpu {
-  // int *d_i;
-  // int *d_j;
+
   unsigned int *d_j;
   unsigned int *d_k;
   T *d_val;
@@ -60,27 +53,23 @@ struct semitensor_gpu {
   ~semitensor_gpu();
 };
 
-//difference to see the tempalte
+
 
 template <typename T>
 tensor_gpu<T>:: tensor_gpu(stensor H_tensor, int thread_len) {
   d_nnz = ((H_tensor.nnz - 1) / thread_len + 1) * thread_len;
   d_threadlen = thread_len;
   d_iterlen = d_nnz / d_threadlen;
-  // int h_nnz=H_tensor.nnz;
 
-  // cudaMalloc((void **)&d_i,sizeof(int)*d_nnz);
-  // cudaMalloc((void **)&d_j,sizeof(int)*d_nnz);
   cudaMalloc((void **)&d_j, sizeof(int)*d_nnz);
   cudaMalloc((void **)&d_k, sizeof(int)*d_nnz);
   cudaMalloc((void **)&d_val, sizeof(T)*d_nnz);
 
-  // cudaMemset(d_i,0,sizeof(int)*d_nnz);
   cudaMemset(d_j, 0, sizeof(int)*d_nnz);
   cudaMemset(d_k, 0, sizeof(int)*d_nnz);
   cudaMemset(d_val, 0, sizeof(T)*d_nnz);
 
-  // cudaMemcpy(d_i,H_tensor.i,sizeof(int)*d_nnz,cudaMemcpyHostToDevice);
+
   cudaMemcpy(d_j, H_tensor.j, sizeof(int)*d_nnz, cudaMemcpyHostToDevice);
   cudaMemcpy(d_k, H_tensor.k, sizeof(int)*d_nnz, cudaMemcpyHostToDevice);
   cudaMemcpy(d_val, H_tensor.val, sizeof(T)*d_nnz, cudaMemcpyHostToDevice);
@@ -95,11 +84,7 @@ void tensor_gpu<T>::Free(int a) {
 
 template <typename T>
 tensor_gpu<T>::~tensor_gpu() {
-  // cudaFree(d_i);
-  // cudaFree(d_j);
-  // cudaFree(d_k);
-  // cudaFree(d_val);
-  // printf("#####Begin Free tensor_gpu#######\n");
+
 }
 
 template <typename T, typename type_thread>
@@ -112,8 +97,7 @@ semitensor_gpu<T, type_thread>::semitensor_gpu(semiTensor<T> H_tensor,
 
   this->BLOCK_SIZE = BLOCK_SIZE;
 
-  // int nnz=H_tensor.nnz;
-  // printf("####CPU nnz=%d##### %d\n", H_tensor.nnz,sizeof(type_thread));
+ 
   int bit_len = sizeof(type_thread) * 8;
   d_nnz = ((H_tensor.nnz - 1) / bit_len + 1);
 
@@ -142,13 +126,9 @@ semitensor_gpu<T, type_thread>::semitensor_gpu(semiTensor<T> H_tensor,
 
 
   cudaMalloc((void **)&d_startflag, sizeof(uint8_t)*d_nnz);
-  // for (int i = 0; i < d_nCols; i++) {
-    cudaMemcpy(d_startflag , h_flag.startflag, sizeof(uint8_t)*d_nnz, cudaMemcpyHostToDevice);
-  // }
-  // cudaMemcpy(d_startflag,h_flag.startflag,sizeof(unsigned short)*d_nnz,cudaMemcpyHostToDevice);
 
-  // cudaMalloc((void **)&d_startflag_backup, sizeof(unsigned short)*d_nnz);
-  // cudaMemcpy(d_startflag_backup, h_flag.startflag, sizeof(unsigned short)*d_nnz, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_startflag , h_flag.startflag, sizeof(uint8_t)*d_nnz, cudaMemcpyHostToDevice);
+
 
   cudaMalloc((void **)&d_blockSum, sizeof(T)*nBlock * d_nCols);
   cudaMemset(d_blockSum, -1, sizeof(T)*nBlock * d_nCols);
@@ -168,32 +148,19 @@ void semitensor_gpu<T, type_thread>::Free(int a) {
   cudaFree(d_startflag);
   cudaFree(d_blockSum);
   cudaFree(d_blockflag);
-  // cudaFree(d_startflag_backup);
+
 }
 template <typename T, typename type_thread>
 semitensor_gpu<T, type_thread>::~semitensor_gpu() {
-  // cudaFree(d_val);
-  // cudaFree(d_bflags);
-  // cudaFree(d_first);
-  // cudaFree(d_last_partial);
-  // cudaFree(d_recache);
-  // cudaFree(d_startflag);
-  // cudaFree(d_blockSum);
-  // cudaFree(d_blockflag);
-  // cudaFree(d_startflag_backup);
 
-  // printf("#####Begin Free semitensor_gpu#######\n");
-  // free(h_result);
 }
 
 template <typename T>
 void transpose_tensor(soa_tensor<T> &H_tensor, int threadLen) {
   int nnz = H_tensor.nnz;
-  // printf("%d nnz=%d\n",__LINE__,nnz);
+
   int flagLen = (nnz - 1) / threadLen + 1;
 
-  // int *H_i=(int *)malloc(sizeof(int)*flagLen*threadLen);
-  // int *H_j=(int *)malloc(sizeof(int)*flagLen*threadLen);
   unsigned int *H_j = (unsigned int *)malloc(sizeof(unsigned int) * flagLen * threadLen);
   unsigned int *H_k = (unsigned int *)malloc(sizeof(unsigned int) * flagLen * threadLen);
   T *H_val = (T *)malloc(sizeof(T) * flagLen * threadLen);
@@ -211,7 +178,7 @@ void transpose_tensor(soa_tensor<T> &H_tensor, int threadLen) {
     // H_i[index]=H_tensor.i[i];
     H_j[index] = H_tensor.j[i];
     H_k[index] = H_tensor.k[i];
-    // printf("%s %d index=%d\n",__FUNCTION__, __LINE__, H_k[index]);
+   
     H_val[index] = H_tensor.val[i];
   }
 
@@ -238,19 +205,7 @@ void transpose_matrix(T *&val, int nRows, int nCols) {
   val = tmp;
 }
 
-// template <typename T, typename type_thread>
-// __global__ void TTMgpu(tensor_gpu<T> D_ltensor, T *D_matrix, int nRows, int nCols, semitensor_gpu<T,type_thread> D_rtensor, unsigned int threadlen);
 
-// template <typename T>
-// __global__ void segmentedscan(T* last_partial, T *blockSum, unsigned short *blockflag, unsigned short *startflag, int d_nnz);
-
-// template <typename T, typename type_thread>
-// __global__ void mergeSum(T *last_partial, T * recache, int *first, type_thread *bflags,int d_nnz);
-
-// template <typename T, typename type_thread>
-// T *callTTM(soa_tensor<T> ltensor, T *matrix, int nRows, int nCols, semiTensor<T> rtensor, type_thread threadtype);
-
-// template <typename T=float, typename type_thread=unsigned int>
 mtype *callTTM(stensor ltensor, mtype *B_matrix, mtype *C_matrix, int B_nRows, int C_nRows, int nCols, semitensor rtensor, type_thread threadtype, int blocksize);
 
 #endif

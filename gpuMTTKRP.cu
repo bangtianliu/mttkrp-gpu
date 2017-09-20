@@ -30,11 +30,11 @@ __global__ void MTTKRPgpu(const tensor_gpu<T> D_ltensor,
   type_thread mask = 1;
 
   int nfibs = D_rtensor.d_nfibs;
-  // printf("tidx=%d,d_nnz=%d\n", tidx, D_rtensor.d_nnz);
+
   if (tidx < D_rtensor.d_nnz) {
-    // if(threadIdx.x==0)printf("%d GPU test\n",__LINE__);
+
     type_thread bits = D_rtensor.d_bflags[tidx];
-    // if(tidx==116)printf("####ibits=%x\n", bits);
+
     unsigned int index_j = D_ltensor.d_j[tidx];
     unsigned int index_k = D_ltensor.d_k[tidx];
 
@@ -57,7 +57,7 @@ __global__ void MTTKRPgpu(const tensor_gpu<T> D_ltensor,
       preFlag = flag;
       flag = (((mask << i)&bits) == 0) ? 0 : 1;
 
-      // if(threadIdx.x==0)printf("Iteration=%d\n", i);
+    
       index_j = D_ltensor.d_j[i * iterlen + tidx];
       index_k = D_ltensor.d_k[i * iterlen + tidx];
 
@@ -77,11 +77,10 @@ __global__ void MTTKRPgpu(const tensor_gpu<T> D_ltensor,
     val = D_ltensor.d_val[(threadlen - 1) * iterlen + tidx];
     lastsum = preFlag * lastsum + val * __ldg(&D_Bmatrix[tidy * B_nRows + index_j]) * __ldg(&D_Cmatrix[tidy * C_nRows + index_k]);
     value[threadIdx.x]=lastsum;
-    // D_rtensor.d_last_partial[tidy * D_rtensor.d_nnz + tidx] = lastsum;
     if (flag == 0) {
-      // if(tidx==116)printf("Hello!!!!!!\n");
+
       value[threadIdx.x]=0;
-      // D_rtensor.d_last_partial[tidy * D_rtensor.d_nnz + tidx] = 0;
+
       D_rtensor.d_recache[tidy * nfibs + d_first] = lastsum;
     }
   
@@ -94,9 +93,8 @@ __global__ void MTTKRPgpu(const tensor_gpu<T> D_ltensor,
          if (D_rtensor.d_blockflag[blockIdx.x] == 1 || blockIdx.x == 0) {
       if (threadIdx.x == (blockDim.x - 1)) {
         
-        // D_rtensor.d_
         blockSum[tidy * gridDim.x + blockIdx.x] = val;
-        // __threadfence();
+
       
       }
     }
@@ -161,7 +159,6 @@ __global__ void MTTKRPgpu(const tensor_gpu<T> D_ltensor,
 
   }
 
-  // __synthreads();
 
 }
 
